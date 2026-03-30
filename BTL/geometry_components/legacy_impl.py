@@ -16,7 +16,7 @@ for _p in (str(_project_root), str(_btl_dir)):
 from libs.shader import *
 from libs import transform as T
 from libs.buffer import *
-from libs.lighting import LightingManager
+from libs.lighting import LightingManager, Material
 from sample_function import LossFunctionType, LossSurfaceMeshGenerator
 import ctypes
 
@@ -114,7 +114,7 @@ class Geo2D:
                
 class Geo3D:
     SHAPES = ["Cube", "Sphere (Lat-Long)", "Sphere (Subdiv)", "Sphere (Grid)", 
-              "Cylinder", "Cone", "Truncated Cone", "Tetrahedron", "Torus", "Prism"]
+              "Cylinder", "Cone", "Truncated Cone", "Tetrahedron", "Torus", "Prism", "Heart"]
 
     @staticmethod
     def generate(shape_type, radius=1.0, height=2.0, sectors=36, stacks=18, inner_radius=0.3):
@@ -498,6 +498,75 @@ class Geo3D:
                 p1 = [radius * np.cos(a1), radius * np.sin(a1), h1]
                 add_tri(ct, p0, p1, nt, nt, nt)
 
+        elif shape_type == "Heart":
+            # Parametric heart surface.
+            st = max(8, int(stacks))
+            sc = max(12, int(sectors))
+
+            # u wraps around [0, 2pi), v spans [0, 1]
+            u_vals = np.linspace(0.0, 2.0 * np.pi, sc, endpoint=False)
+            v_vals = np.linspace(0.0, 1.0, st)
+
+            def heart_pos(u, v):
+                sv = np.sin(np.pi * v)
+                x = sv * (np.sin(u) ** 3)
+                y = sv * (13.0 * np.cos(u) - 5.0 * np.cos(2.0 * u) - 2.0 * np.cos(3.0 * u) - np.cos(4.0 * u)) / 16.0
+                z = 0.1 * np.cos(np.pi * v)
+                # Keep height control intuitive in viewer by scaling z with height.
+                z *= max(0.01, float(height))
+                p = np.array([x, y, z], dtype=np.float64)
+                return p * float(radius)
+
+            def heart_normal(u, v):
+                su = np.sin(u)
+                cu = np.cos(u)
+                sv = np.sin(np.pi * v)
+                cv = np.cos(np.pi * v)
+
+                # dP/du
+                dx_du = sv * 3.0 * (su ** 2) * cu
+                dy_du = sv * (-13.0 * np.sin(u) + 10.0 * np.sin(2.0 * u) + 6.0 * np.sin(3.0 * u) + 4.0 * np.sin(4.0 * u)) / 16.0
+                dz_du = 0.0
+
+                # dP/dv
+                dx_dv = np.pi * cv * (su ** 3)
+                dy_dv = np.pi * cv * (13.0 * np.cos(u) - 5.0 * np.cos(2.0 * u) - 2.0 * np.cos(3.0 * u) - np.cos(4.0 * u)) / 16.0
+                dz_dv = -0.1 * np.pi * sv * max(0.01, float(height))
+
+                du = np.array([dx_du, dy_du, dz_du], dtype=np.float64)
+                dv = np.array([dx_dv, dy_dv, dz_dv], dtype=np.float64)
+                n = np.cross(du, dv)
+                nn = np.linalg.norm(n)
+                if nn < 1e-10:
+                    return np.array([0.0, 0.0, 1.0], dtype=np.float64)
+                return n / nn
+
+            for i in range(st - 1):
+                v0 = v_vals[i]
+                v1 = v_vals[i + 1]
+                for j in range(sc):
+                    jn = (j + 1) % sc
+                    u0 = u_vals[j]
+                    u1 = u_vals[jn]
+
+                    p00 = heart_pos(u0, v0)
+                    p01 = heart_pos(u1, v0)
+                    p10 = heart_pos(u0, v1)
+                    p11 = heart_pos(u1, v1)
+
+                    n00 = heart_normal(u0, v0)
+                    n01 = heart_normal(u1, v0)
+                    n10 = heart_normal(u0, v1)
+                    n11 = heart_normal(u1, v1)
+
+                    t00 = [j / sc, i / (st - 1)]
+                    t01 = [(j + 1) / sc, i / (st - 1)]
+                    t10 = [j / sc, (i + 1) / (st - 1)]
+                    t11 = [(j + 1) / sc, (i + 1) / (st - 1)]
+
+                    add_tri(p00, p10, p11, n00, n10, n11, t00, t10, t11)
+                    add_tri(p00, p11, p01, n00, n11, n01, t00, t11, t01)
+
         return np.array(vertices, dtype=np.float32), \
                np.array(normals, dtype=np.float32), \
                np.array(texcoords, dtype=np.float32)
@@ -541,14 +610,21 @@ class MeshDrawable:
         self.shader_phong = Shader(str(base / "phong.vert"), str(base / "phong.frag"))
         self.shader_flat = Shader(self._flat_vertex_shader(), self._flat_fragment_shader())
         self.shader_texture = Shader(self._texture_vertex_shader(), self._texture_fragment_shader())
-        self.shader_depth = Shader(self._depth_vertex_shader(), self._depth_fragment_shader())
+        self.shader_depth_prepass = Shader(self._depth_prepass_vertex_shader(), self._depth_prepass_fragment_shader())
+        self.shader_depth_visual = Shader(self._depth_visual_vertex_shader(), self._depth_visual_fragment_shader())
 
         self.uma_flat = UManager(self.shader_flat)
         self.uma_color = UManager(self.shader_color)
         self.uma_gouraud = UManager(self.shader_gouraud)
         self.uma_phong = UManager(self.shader_phong)
         self.uma_texture = UManager(self.shader_texture)
-        self.uma_depth = UManager(self.shader_depth)
+        self.uma_depth_prepass = UManager(self.shader_depth_prepass)
+        self.uma_depth_visual = UManager(self.shader_depth_visual)
+
+        self.depth_fbo = None
+        self.depth_texture = None
+        self.depth_size = (0, 0)
+        self.depth_colormap_mode = 0  # 0: grayscale, 1: heatmap
 
         self.lighting_gouraud = LightingManager(self.uma_gouraud)
         self.lighting_phong = LightingManager(self.uma_phong)
@@ -563,6 +639,9 @@ class MeshDrawable:
         self.texture_path = None
         self.texture_ready = False
         self.flat_color = np.array([0.9, 0.6, 0.2], dtype=np.float32)
+        self.material_override = None
+        self.emissive_color = np.zeros(3, dtype=np.float32)
+        self.emissive_strength = 0.0
 
     @staticmethod
     def _default_colors_from_pos(verts):
@@ -597,8 +676,71 @@ class MeshDrawable:
         # Keep values in shader-friendly range
         return np.clip(diffuse, 0.0, 2.0), np.clip(specular, 0.0, 2.0), np.clip(ambient, 0.0, 2.0)
 
+    @staticmethod
+    def _custom_light(enabled, position=None, color=None, intensity=1.0):
+        if not enabled:
+            z = np.zeros(3, dtype=np.float32)
+            return False, z, z, z, z
+
+        pos = np.asarray([0.0, 0.5, 0.9] if position is None else position, dtype=np.float32).reshape(3)
+        col = np.asarray([1.0, 1.0, 1.0] if color is None else color, dtype=np.float32).reshape(3)
+        gain = float(max(0.0, intensity))
+
+        diffuse = np.clip(col * gain, 0.0, 4.0)
+        specular = np.clip(col * gain, 0.0, 4.0)
+        ambient = np.clip(col * (0.20 * gain), 0.0, 2.0)
+        return True, pos, diffuse, specular, ambient
+
+    @staticmethod
+    def _surface_material(base_material, roughness=0.25, metallic=0.05):
+        r = float(np.clip(roughness, 0.0, 1.0))
+        m = float(np.clip(metallic, 0.0, 1.0))
+
+        base_diff = np.asarray(base_material.diffuse, dtype=np.float32)
+        base_spec = np.asarray(base_material.specular, dtype=np.float32)
+        base_amb = np.asarray(base_material.ambient, dtype=np.float32)
+
+        dielectric_f0 = np.array([0.04, 0.04, 0.04], dtype=np.float32)
+        metal_f0 = np.clip(0.25 * base_spec + 0.75 * base_diff, 0.0, 1.0)
+
+        specular = ((1.0 - m) * dielectric_f0 + m * metal_f0) * (1.0 - 0.75 * r)
+        diffuse = base_diff * (1.0 - 0.65 * m) * (0.45 + 0.55 * (1.0 - r))
+        ambient = base_amb * (0.7 + 0.3 * (1.0 - r)) * (1.0 - 0.35 * m)
+        shininess = 8.0 + ((1.0 - r) ** 2) * 220.0
+
+        return Material(
+            diffuse=np.clip(diffuse, 0.0, 1.0),
+            specular=np.clip(specular, 0.0, 1.0),
+            ambient=np.clip(ambient, 0.0, 1.0),
+            shininess=float(shininess),
+        )
+
     def set_model(self, model):
         self.model = np.asarray(model, dtype=np.float32)
+
+    def set_vertex_color(self, color_rgb):
+        color = np.asarray(color_rgb, dtype=np.float32).reshape(3)
+        self.colors = np.tile(color, (self.vertices.shape[0], 1)).astype(np.float32)
+        self.vao.activate()
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.vao.vbo[1])
+        GL.glBufferData(GL.GL_ARRAY_BUFFER, self.colors, GL.GL_DYNAMIC_DRAW)
+        self.vao.deactivate()
+
+    def set_material(self, diffuse=None, specular=None, ambient=None, shininess=None):
+        base = self.material_override if self.material_override is not None else LightingManager.DEFAULT_MATERIAL
+        d = np.asarray(base.diffuse if diffuse is None else diffuse, dtype=np.float32)
+        s = np.asarray(base.specular if specular is None else specular, dtype=np.float32)
+        a = np.asarray(base.ambient if ambient is None else ambient, dtype=np.float32)
+        sh = float(base.shininess if shininess is None else shininess)
+        self.material_override = Material(diffuse=d, specular=s, ambient=a, shininess=sh)
+
+    def set_emissive(self, color=None, strength=0.0):
+        if color is None:
+            self.emissive_color = np.zeros(3, dtype=np.float32)
+            self.emissive_strength = 0.0
+            return
+        self.emissive_color = np.asarray(color, dtype=np.float32).reshape(3)
+        self.emissive_strength = float(max(0.0, strength))
 
     def set_texture(self, texture_path):
         if not texture_path:
@@ -618,24 +760,122 @@ class MeshDrawable:
         self.uma_texture.setup_texture("texture_diffuse", self.texture_path)
         self.texture_ready = True
 
+    def _ensure_depth_fbo(self, width, height):
+        w, h = int(max(1, width)), int(max(1, height))
+        if self.depth_fbo is not None and self.depth_size == (w, h):
+            return
+
+        if self.depth_texture is not None:
+            GL.glDeleteTextures([self.depth_texture])
+            self.depth_texture = None
+        if self.depth_fbo is not None:
+            GL.glDeleteFramebuffers(1, [self.depth_fbo])
+            self.depth_fbo = None
+
+        self.depth_fbo = GL.glGenFramebuffers(1)
+        GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, self.depth_fbo)
+
+        self.depth_texture = GL.glGenTextures(1)
+        GL.glBindTexture(GL.GL_TEXTURE_2D, self.depth_texture)
+        GL.glTexImage2D(
+            GL.GL_TEXTURE_2D,
+            0,
+            GL.GL_DEPTH_COMPONENT24,
+            w,
+            h,
+            0,
+            GL.GL_DEPTH_COMPONENT,
+            GL.GL_FLOAT,
+            None,
+        )
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE)
+        GL.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE)
+        GL.glFramebufferTexture2D(
+            GL.GL_FRAMEBUFFER,
+            GL.GL_DEPTH_ATTACHMENT,
+            GL.GL_TEXTURE_2D,
+            self.depth_texture,
+            0,
+        )
+
+        GL.glDrawBuffer(GL.GL_NONE)
+        GL.glReadBuffer(GL.GL_NONE)
+
+        status = GL.glCheckFramebufferStatus(GL.GL_FRAMEBUFFER)
+        if status != GL.GL_FRAMEBUFFER_COMPLETE:
+            GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0)
+            raise RuntimeError(f"Depth FBO incomplete: {status}")
+
+        GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0)
+        self.depth_size = (w, h)
+
     def _upload_common(self, uma, projection, modelview):
         uma.upload_uniform_matrix4fv(np.asarray(projection, dtype=np.float32), 'projection', True)
         uma.upload_uniform_matrix4fv(np.asarray(modelview, dtype=np.float32), 'modelview', True)
 
     def draw(self, projection, view, model=None,
              shading_mode=MODE_LIGHTING,
+             alpha_override=1.0,
+             flat_color_override=None,
              lighting_algorithm='phong',
              light_1_enabled=True,
              light_2_enabled=False,
              brightness=1.0,
-             show_depth_map=False):
+             hdri_environment_enabled=False,
+             hdri_environment_intensity=0.55,
+             hdri_environment_color=None,
+             custom_light_enabled=False,
+             custom_light_position=None,
+             custom_light_color=None,
+             custom_light_intensity=1.0,
+             material_roughness=0.25,
+             material_metallic=0.05,
+             material_override=None,
+             emissive_color=None,
+             emissive_strength=None,
+             show_depth_map=False,
+             near_plane=0.1,
+             far_plane=100.0,
+             is_orthographic=False,
+             depth_colormap_mode=None):
         use_model = self.model if model is None else np.asarray(model, dtype=np.float32)
         modelview = self._compose_modelview(view, use_model)
+        alpha = float(np.clip(alpha_override, 0.0, 1.0))
+        hdri_color = np.asarray([1.0, 1.0, 1.0] if hdri_environment_color is None else hdri_environment_color, dtype=np.float32).reshape(3)
+        hdri_intensity = float(max(0.0, hdri_environment_intensity))
 
         self.vao.activate()
         if show_depth_map:
-            GL.glUseProgram(self.shader_depth.render_idx)
-            self._upload_common(self.uma_depth, projection, modelview)
+            viewport = GL.glGetIntegerv(GL.GL_VIEWPORT)
+            vx, vy, vw, vh = int(viewport[0]), int(viewport[1]), int(viewport[2]), int(viewport[3])
+            self._ensure_depth_fbo(vw, vh)
+
+            GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, self.depth_fbo)
+            GL.glViewport(0, 0, vw, vh)
+            GL.glClear(GL.GL_DEPTH_BUFFER_BIT)
+
+            GL.glUseProgram(self.shader_depth_prepass.render_idx)
+            self._upload_common(self.uma_depth_prepass, projection, modelview)
+            GL.glDrawArrays(self.primitive, 0, self.vertices.shape[0])
+
+            GL.glBindFramebuffer(GL.GL_FRAMEBUFFER, 0)
+            GL.glViewport(vx, vy, vw, vh)
+
+            GL.glUseProgram(self.shader_depth_visual.render_idx)
+            self._upload_common(self.uma_depth_visual, projection, modelview)
+            mode = int(self.depth_colormap_mode if depth_colormap_mode is None else depth_colormap_mode)
+            self.uma_depth_visual.upload_uniform_scalar1f(float(max(1e-4, near_plane)), 'u_near')
+            self.uma_depth_visual.upload_uniform_scalar1f(float(max(float(near_plane) + 1e-4, far_plane)), 'u_far')
+            self.uma_depth_visual.upload_uniform_scalar1f(float(vw), 'u_view_w')
+            self.uma_depth_visual.upload_uniform_scalar1f(float(vh), 'u_view_h')
+            self.uma_depth_visual.upload_uniform_scalar1f(float(mode), 'u_color_mode')
+            self.uma_depth_visual.upload_uniform_scalar1f(1.0 if is_orthographic else 0.0, 'u_is_ortho')
+            GL.glActiveTexture(GL.GL_TEXTURE0)
+            GL.glBindTexture(GL.GL_TEXTURE_2D, self.depth_texture)
+            GL.glUniform1i(GL.glGetUniformLocation(self.shader_depth_visual.render_idx, 'u_depth_tex'), 0)
+
             GL.glDrawArrays(self.primitive, 0, self.vertices.shape[0])
             self.vao.deactivate()
             return
@@ -643,46 +883,98 @@ class MeshDrawable:
         if shading_mode == self.MODE_FLAT:
             GL.glUseProgram(self.shader_flat.render_idx)
             self._upload_common(self.uma_flat, projection, modelview)
-            self.uma_flat.upload_uniform_vector3fv(self.flat_color, 'u_color')
+            flat_color = self.flat_color if flat_color_override is None else np.asarray(flat_color_override, dtype=np.float32).reshape(3)
+            self.uma_flat.upload_uniform_vector3fv(flat_color, 'u_color')
+            self.uma_flat.upload_uniform_scalar1f(alpha, 'u_alpha')
 
         elif shading_mode == self.MODE_COLOR:
             GL.glUseProgram(self.shader_color.render_idx)
             self._upload_common(self.uma_color, projection, modelview)
+            self.uma_color.upload_uniform_scalar1f(alpha, 'u_alpha')
 
         elif shading_mode == self.MODE_LIGHTING:
             use_gouraud = str(lighting_algorithm).lower().startswith('g')
+            c_enabled, c_pos, c_diff, c_spec, c_amb = self._custom_light(
+                custom_light_enabled,
+                custom_light_position,
+                custom_light_color,
+                custom_light_intensity,
+            )
             if use_gouraud:
                 GL.glUseProgram(self.shader_gouraud.render_idx)
                 self._upload_common(self.uma_gouraud, projection, modelview)
                 d, s, a = self._merge_lights(light_1_enabled, light_2_enabled, brightness)
                 light = LightingManager.DEFAULT_LIGHT
-                mat = LightingManager.DEFAULT_MATERIAL
+                mat = material_override if material_override is not None else self.material_override
+                if mat is None:
+                    mat = LightingManager.DEFAULT_MATERIAL
+                mat = self._surface_material(mat, roughness=material_roughness, metallic=material_metallic)
                 light.diffuse = d
                 light.specular = s
                 light.ambient = a
-                self.lighting_gouraud.setup_gouraud(light=light, material=mat, shininess=80.0)
+                self.lighting_gouraud.setup_gouraud(light=light, material=mat, shininess=float(mat.shininess))
+                self.uma_gouraud.upload_uniform_scalar1i(1 if c_enabled else 0, 'custom_light_enabled')
+                self.uma_gouraud.upload_uniform_vector3fv(c_pos, 'custom_light_pos')
+                self.uma_gouraud.upload_uniform_vector3fv(c_diff, 'custom_light_diffuse')
+                self.uma_gouraud.upload_uniform_vector3fv(c_spec, 'custom_light_specular')
+                self.uma_gouraud.upload_uniform_vector3fv(c_amb, 'custom_light_ambient')
+                self.uma_gouraud.upload_uniform_scalar1i(1 if hdri_environment_enabled else 0, 'hdri_environment_enabled')
+                self.uma_gouraud.upload_uniform_vector3fv(hdri_color, 'hdri_environment_color')
+                self.uma_gouraud.upload_uniform_scalar1f(hdri_intensity, 'hdri_environment_intensity')
+                self.uma_gouraud.upload_uniform_scalar1f(alpha, 'u_alpha')
             else:
                 GL.glUseProgram(self.shader_phong.render_idx)
                 self._upload_common(self.uma_phong, projection, modelview)
                 d, s, a = self._merge_lights(light_1_enabled, light_2_enabled, brightness)
                 light = LightingManager.DEFAULT_LIGHT
-                mat = LightingManager.DEFAULT_MATERIAL
+                mat = material_override if material_override is not None else self.material_override
+                if mat is None:
+                    mat = LightingManager.DEFAULT_MATERIAL
+                mat = self._surface_material(mat, roughness=material_roughness, metallic=material_metallic)
                 light.diffuse = d
                 light.specular = s
                 light.ambient = a
                 self.lighting_phong.setup_phong(light=light, material=mat, mode=1)
+                self.uma_phong.upload_uniform_scalar1i(1 if c_enabled else 0, 'custom_light_enabled')
+                self.uma_phong.upload_uniform_vector3fv(c_pos, 'custom_light_pos')
+                self.uma_phong.upload_uniform_vector3fv(c_diff, 'custom_light_diffuse')
+                self.uma_phong.upload_uniform_vector3fv(c_spec, 'custom_light_specular')
+                self.uma_phong.upload_uniform_vector3fv(c_amb, 'custom_light_ambient')
+                self.uma_phong.upload_uniform_scalar1i(1 if hdri_environment_enabled else 0, 'hdri_environment_enabled')
+                self.uma_phong.upload_uniform_vector3fv(hdri_color, 'hdri_environment_color')
+                self.uma_phong.upload_uniform_scalar1f(hdri_intensity, 'hdri_environment_intensity')
+                active_emissive = self.emissive_color if emissive_color is None else np.asarray(emissive_color, dtype=np.float32).reshape(3)
+                active_strength = self.emissive_strength if emissive_strength is None else float(emissive_strength)
+                self.uma_phong.upload_uniform_vector3fv(active_emissive, 'emissive_color')
+                self.uma_phong.upload_uniform_scalar1f(max(0.0, active_strength), 'emissive_strength')
+                self.uma_phong.upload_uniform_scalar1f(alpha, 'u_alpha')
 
         elif shading_mode in (self.MODE_TEXTURE, self.MODE_COMBINED):
             self._ensure_texture()
             GL.glUseProgram(self.shader_texture.render_idx)
             self._upload_common(self.uma_texture, projection, modelview)
             d, s, a = self._merge_lights(light_1_enabled, light_2_enabled, brightness)
+            c_enabled, c_pos, c_diff, c_spec, c_amb = self._custom_light(
+                custom_light_enabled,
+                custom_light_position,
+                custom_light_color,
+                custom_light_intensity,
+            )
             light = LightingManager.DEFAULT_LIGHT
-            mat = LightingManager.DEFAULT_MATERIAL
+            mat = self._surface_material(LightingManager.DEFAULT_MATERIAL, roughness=material_roughness, metallic=material_metallic)
             light.diffuse = d
             light.specular = s
             light.ambient = a
             self.lighting_texture.setup_phong(light=light, material=mat, mode=1)
+            self.uma_texture.upload_uniform_scalar1i(1 if c_enabled else 0, 'custom_light_enabled')
+            self.uma_texture.upload_uniform_vector3fv(c_pos, 'custom_light_pos')
+            self.uma_texture.upload_uniform_vector3fv(c_diff, 'custom_light_diffuse')
+            self.uma_texture.upload_uniform_vector3fv(c_spec, 'custom_light_specular')
+            self.uma_texture.upload_uniform_vector3fv(c_amb, 'custom_light_ambient')
+            self.uma_texture.upload_uniform_scalar1i(1 if hdri_environment_enabled else 0, 'hdri_environment_enabled')
+            self.uma_texture.upload_uniform_vector3fv(hdri_color, 'hdri_environment_color')
+            self.uma_texture.upload_uniform_scalar1f(hdri_intensity, 'hdri_environment_intensity')
+            self.uma_texture.upload_uniform_scalar1f(alpha, 'u_alpha')
             if shading_mode == self.MODE_TEXTURE:
                 self.uma_texture.upload_uniform_scalar1f(0.0, 'color_factor')
                 self.uma_texture.upload_uniform_scalar1f(0.0, 'phong_factor')
@@ -710,14 +1002,15 @@ void main(){
         return """
 #version 330 core
 uniform vec3 u_color;
+uniform float u_alpha;
 out vec4 out_color;
 void main(){
-    out_color = vec4(u_color, 1.0);
+    out_color = vec4(u_color, u_alpha);
 }
 """
 
     @staticmethod
-    def _depth_vertex_shader():
+    def _depth_prepass_vertex_shader():
         return """
 #version 330 core
 layout(location = 0) in vec3 position;
@@ -729,13 +1022,64 @@ void main(){
 """
 
     @staticmethod
-    def _depth_fragment_shader():
+    def _depth_prepass_fragment_shader():
         return """
 #version 330 core
-out vec4 out_color;
+void main(){ }
+"""
+
+    @staticmethod
+    def _depth_visual_vertex_shader():
+        return """
+#version 330 core
+layout(location = 0) in vec3 position;
+uniform mat4 projection;
+uniform mat4 modelview;
 void main(){
-    float d = gl_FragCoord.z;
-    out_color = vec4(vec3(d), 1.0);
+    gl_Position = projection * modelview * vec4(position, 1.0);
+}
+"""
+
+    @staticmethod
+    def _depth_visual_fragment_shader():
+        return """
+#version 330 core
+uniform sampler2D u_depth_tex;
+uniform float u_near;
+uniform float u_far;
+uniform float u_view_w;
+uniform float u_view_h;
+uniform float u_color_mode; // 0 grayscale, 1 heatmap
+uniform float u_is_ortho;   // 1 when orthographic projection
+
+out vec4 out_color;
+
+float linearize_depth(float d) {
+    if (u_is_ortho > 0.5) {
+        return clamp(d, 0.0, 1.0);
+    }
+    float z = d * 2.0 - 1.0;
+    float linear = (2.0 * u_near * u_far) / (u_far + u_near - z * (u_far - u_near));
+    return clamp((linear - u_near) / max(1e-6, (u_far - u_near)), 0.0, 1.0);
+}
+
+vec3 heatmap(float t) {
+    t = clamp(t, 0.0, 1.0);
+    vec3 c1 = vec3(0.10, 0.20, 0.85);
+    vec3 c2 = vec3(0.20, 0.85, 0.95);
+    vec3 c3 = vec3(0.95, 0.90, 0.20);
+    vec3 c4 = vec3(0.90, 0.20, 0.10);
+    if (t < 0.33) return mix(c1, c2, t / 0.33);
+    if (t < 0.66) return mix(c2, c3, (t - 0.33) / 0.33);
+    return mix(c3, c4, (t - 0.66) / 0.34);
+}
+
+void main(){
+    vec2 uv = vec2(gl_FragCoord.x / max(1.0, u_view_w), gl_FragCoord.y / max(1.0, u_view_h));
+    float d = texture(u_depth_tex, uv).r;
+    float z01 = linearize_depth(d);
+    vec3 color = (u_color_mode > 0.5) ? heatmap(z01) : vec3(z01);
+    out_color = vec4(color, 1.0);
 }
 """
 
@@ -779,9 +1123,18 @@ in vec2 v_uv;
 uniform mat3 K_materials;
 uniform mat3 I_light;
 uniform vec3 light_pos;
+uniform int custom_light_enabled;
+uniform vec3 custom_light_pos;
+uniform vec3 custom_light_diffuse;
+uniform vec3 custom_light_specular;
+uniform vec3 custom_light_ambient;
+uniform int hdri_environment_enabled;
+uniform vec3 hdri_environment_color;
+uniform float hdri_environment_intensity;
 uniform float shininess;
 uniform float color_factor;
 uniform float phong_factor;
+uniform float u_alpha;
 uniform sampler2D texture_diffuse;
 
 out vec4 fragColor;
@@ -794,10 +1147,22 @@ void main(){
     float spec = pow(max(dot(R, V), 0.0), shininess);
     vec3 g = vec3(max(dot(L, N), 0.0), spec, 1.0);
     vec3 phong = matrixCompMult(K_materials, I_light) * g;
+    if (custom_light_enabled != 0) {
+        vec3 L2 = normalize(custom_light_pos - v_pos);
+        vec3 R2 = reflect(-L2, N);
+        float spec2 = pow(max(dot(R2, V), 0.0), shininess);
+        vec3 g2 = vec3(max(dot(L2, N), 0.0), spec2, 1.0);
+        mat3 I_custom = mat3(custom_light_diffuse, custom_light_specular, custom_light_ambient);
+        phong += matrixCompMult(K_materials, I_custom) * g2;
+    }
+    if (hdri_environment_enabled != 0) {
+        vec3 env = K_materials[2] * hdri_environment_color * hdri_environment_intensity;
+        phong += env;
+    }
     vec3 tex = texture(texture_diffuse, v_uv).rgb;
     float texture_factor = max(0.0, 1.0 - color_factor - phong_factor);
     vec3 rgb = color_factor * v_color + phong_factor * phong + texture_factor * tex;
-    fragColor = vec4(rgb, 1.0);
+    fragColor = vec4(rgb, u_alpha);
 }
 """
 
@@ -842,53 +1207,80 @@ def create_math_surface_drawable(func_expr, x_min=-2.0, x_max=2.0, y_min=-2.0, y
             raise ValueError("Unsupported expression syntax")
 
     steps = max(4, int(steps))
-    xs = np.linspace(x_min, x_max, steps)
-    ys = np.linspace(y_min, y_max, steps)
+    xs = np.linspace(float(x_min), float(x_max), steps, dtype=np.float64)
+    ys = np.linspace(float(y_min), float(y_max), steps, dtype=np.float64)
+    xg, yg = np.meshgrid(xs, ys, indexing='ij')
 
-    grid = np.zeros((steps, steps, 3), dtype=np.float32)
-    for i, x in enumerate(xs):
-        for j, y in enumerate(ys):
-            z = eval(compile(tree, '<expr>', 'eval'), {'__builtins__': {}}, {**safe_names, 'x': x, 'y': y})
-            grid[i, j] = [x, y, float(z)]
+    compiled = compile(tree, '<expr>', 'eval')
+    z_eval = eval(compiled, {'__builtins__': {}}, {**safe_names, 'x': xg, 'y': yg})
+    z = np.asarray(z_eval, dtype=np.float64)
+    if z.shape == ():
+        z = np.full_like(xg, float(z), dtype=np.float64)
+    elif z.shape != xg.shape:
+        raise ValueError(f"Expression output shape mismatch: got {z.shape}, expected {xg.shape}")
 
-    vertices = []
-    normals = []
-    texcoords = []
-    for i in range(steps - 1):
-        for j in range(steps - 1):
-            p00 = grid[i, j]
-            p10 = grid[i + 1, j]
-            p11 = grid[i + 1, j + 1]
-            p01 = grid[i, j + 1]
+    z = np.nan_to_num(z, nan=0.0, posinf=0.0, neginf=0.0)
 
-            def push(a, b, c, ta, tb, tc):
-                nrm = np.cross(b - a, c - a)
-                nlen = np.linalg.norm(nrm)
-                if nlen < 1e-8:
-                    nrm = np.array([0.0, 0.0, 1.0], dtype=np.float32)
-                else:
-                    nrm = (nrm / nlen).astype(np.float32)
-                vertices.extend([a.tolist(), b.tolist(), c.tolist()])
-                normals.extend([nrm.tolist(), nrm.tolist(), nrm.tolist()])
-                texcoords.extend([ta, tb, tc])
+    dz_dx, dz_dy = np.gradient(z, xs, ys, edge_order=2)
+    nx = -dz_dx
+    ny = -dz_dy
+    nz = np.ones_like(z)
+    nlen = np.sqrt(nx * nx + ny * ny + nz * nz)
+    nlen = np.where(nlen < 1e-8, 1.0, nlen)
+    nx /= nlen
+    ny /= nlen
+    nz /= nlen
 
-            u0, u1 = i / (steps - 1), (i + 1) / (steps - 1)
-            v0, v1 = j / (steps - 1), (j + 1) / (steps - 1)
-            push(p00, p10, p11, [u0, v0], [u1, v0], [u1, v1])
-            push(p00, p11, p01, [u0, v0], [u1, v1], [u0, v1])
+    z_min = float(np.min(z))
+    z_max = float(np.max(z))
+    span = max(1e-12, z_max - z_min)
+    t = np.clip((z - z_min) / span, 0.0, 1.0)
+    colors_grid = np.stack((t, 0.25 + 0.7 * (1.0 - np.abs(2.0 * t - 1.0)), 1.0 - t), axis=-1)
 
-    return MeshDrawable(np.array(vertices, dtype=np.float32),
-                        np.array(normals, dtype=np.float32),
-                        np.array(texcoords, dtype=np.float32),
-                        primitive=GL.GL_TRIANGLES)
+    u = np.linspace(0.0, 1.0, steps, dtype=np.float64)
+    v = np.linspace(0.0, 1.0, steps, dtype=np.float64)
+    ug, vg = np.meshgrid(u, v, indexing='ij')
+
+    verts_grid = np.stack((xg, yg, z), axis=-1).astype(np.float32)
+    norms_grid = np.stack((nx, ny, nz), axis=-1).astype(np.float32)
+    tex_grid = np.stack((ug, vg), axis=-1).astype(np.float32)
+    cols_grid = colors_grid.astype(np.float32)
+
+    i, j = np.meshgrid(np.arange(steps - 1, dtype=np.int32), np.arange(steps - 1, dtype=np.int32), indexing='ij')
+    i00 = i * steps + j
+    i10 = (i + 1) * steps + j
+    i11 = (i + 1) * steps + (j + 1)
+    i01 = i * steps + (j + 1)
+
+    tri1 = np.stack((i00, i10, i11), axis=-1).reshape(-1, 3)
+    tri2 = np.stack((i00, i11, i01), axis=-1).reshape(-1, 3)
+    indices = np.concatenate((tri1, tri2), axis=0).astype(np.int32)
+
+    flat_vertices = verts_grid.reshape(-1, 3)
+    flat_normals = norms_grid.reshape(-1, 3)
+    flat_texcoords = tex_grid.reshape(-1, 2)
+    flat_colors = cols_grid.reshape(-1, 3)
+
+    tri_vertices = flat_vertices[indices.reshape(-1)]
+    tri_normals = flat_normals[indices.reshape(-1)]
+    tri_texcoords = flat_texcoords[indices.reshape(-1)]
+    tri_colors = flat_colors[indices.reshape(-1)]
+
+    return MeshDrawable(
+        tri_vertices.astype(np.float32),
+        tri_normals.astype(np.float32),
+        tri_texcoords.astype(np.float32),
+        colors=tri_colors.astype(np.float32),
+        primitive=GL.GL_TRIANGLES,
+    )
 
 
 def create_loss_surface_drawable(
     loss_type,
-    x_min=-6.0,
-    x_max=6.0,
-    y_min=-6.0,
-    y_max=6.0,
+    x_min=-30.0,
+    x_max=30.0,
+    y_min=-30.0,
+    y_max=30.0,
     resolution=100,
 ):
     """
@@ -919,11 +1311,16 @@ def create_loss_surface_drawable(
     )
     tri_vertices, tri_normals, tri_colors, tri_texcoords = LossSurfaceMeshGenerator.expand_indexed_triangles(mesh)
 
+    tri_vertices = np.nan_to_num(np.asarray(tri_vertices, dtype=np.float32), nan=0.0, posinf=0.0, neginf=0.0)
+    tri_normals = np.nan_to_num(np.asarray(tri_normals, dtype=np.float32), nan=0.0, posinf=0.0, neginf=0.0)
+    tri_texcoords = np.nan_to_num(np.asarray(tri_texcoords, dtype=np.float32), nan=0.0, posinf=0.0, neginf=0.0)
+    tri_colors = np.nan_to_num(np.asarray(tri_colors, dtype=np.float32), nan=0.0, posinf=0.0, neginf=0.0)
+
     return MeshDrawable(
-        tri_vertices.astype(np.float32),
-        tri_normals.astype(np.float32),
-        tri_texcoords.astype(np.float32),
-        colors=tri_colors.astype(np.float32),
+        tri_vertices,
+        tri_normals,
+        tri_texcoords,
+        colors=tri_colors,
         primitive=GL.GL_TRIANGLES,
     )
 

@@ -11,7 +11,9 @@ from .loss_functions import LossFunctionManager, LossFunctionType
 class OptimizerType(Enum):
     """Supported optimization algorithms for trajectory simulation."""
 
+    BATCH_GRADIENT_DESCENT = "batch_gradient_descent"
     GRADIENT_DESCENT = "gradient_descent"
+    MINI_BATCH_SGD = "mini_batch_sgd"
     MOMENTUM = "momentum"
     ADAM = "adam"
 
@@ -45,6 +47,9 @@ class BaseOptimizer(ABC):
 
         self._rng = np.random.default_rng(rng_seed)
         self.step_count = 0
+        self.max_abs_gradient = 1e6
+        self.max_abs_delta = 1e3
+        self.max_abs_position = 1e4
 
     @property
     def x(self) -> float:
@@ -82,23 +87,84 @@ class BaseOptimizer(ABC):
     def _compute_delta(self, gradient: np.ndarray) -> np.ndarray:
         """Return coordinate delta to apply: new_position = old_position + delta."""
 
-    def step(self) -> np.ndarray:
-        gradient = self._stochastic_gradient()
-        delta = self._compute_delta(gradient)
+    def _sanitize_vector(self, vec: np.ndarray, limit: float) -> np.ndarray:
+        arr = np.asarray(vec, dtype=np.float64)
+        arr = np.nan_to_num(arr, nan=0.0, posinf=limit, neginf=-limit)
+        return np.clip(arr, -limit, limit)
 
+    def _safe_delta(self, gradient: np.ndarray) -> np.ndarray:
+        grad = self._sanitize_vector(gradient, self.max_abs_gradient)
+        delta = self._compute_delta(grad)
+        return self._sanitize_vector(delta, self.max_abs_delta)
+
+    def _apply_update(self, delta: np.ndarray) -> np.ndarray:
         self.previous_position = self.position.copy()
-        self.position = self.position + np.asarray(delta, dtype=np.float64)
-
+        candidate = self.position + self._sanitize_vector(delta, self.max_abs_delta)
+        if not np.all(np.isfinite(candidate)):
+            candidate = self.position.copy()
+        self.position = np.clip(candidate, -self.max_abs_position, self.max_abs_position)
         self.step_count += 1
         self.trajectory.append(self.position.copy())
         return self.position.copy()
 
+    def step(self) -> np.ndarray:
+        gradient = self._stochastic_gradient()
+        delta = self._safe_delta(gradient)
+        return self._apply_update(delta)
+
 
 class GradientDescentOptimizer(BaseOptimizer):
-    """Vanilla gradient descent (or SGD when noise_variance > 0)."""
+    """Stochastic Gradient Descent (SGD) with optional gradient noise."""
 
     def _compute_delta(self, gradient: np.ndarray) -> np.ndarray:
         return -self.learning_rate * gradient
+
+
+class BatchGradientDescentOptimizer(BaseOptimizer):
+    """Full-batch Gradient Descent using analytical gradient without stochastic noise."""
+
+    def _compute_delta(self, gradient: np.ndarray) -> np.ndarray:
+        return -self.learning_rate * gradient
+
+    def step(self) -> np.ndarray:
+        gradient = self._raw_gradient()
+        delta = self._safe_delta(gradient)
+        return self._apply_update(delta)
+
+
+class MiniBatchSGDOptimizer(BaseOptimizer):
+    """Mini-batch SGD with noise scale reduced by sqrt(batch_size)."""
+
+    def __init__(
+        self,
+        loss_type: LossFunctionType,
+        initial_x: float,
+        initial_y: float,
+        learning_rate: float = 0.01,
+        batch_size: int = 16,
+        noise_variance: float = 0.0,
+        rng_seed: int | None = None,
+    ):
+        super().__init__(
+            loss_type=loss_type,
+            initial_x=initial_x,
+            initial_y=initial_y,
+            learning_rate=learning_rate,
+            noise_variance=noise_variance,
+            rng_seed=rng_seed,
+        )
+        self.batch_size = max(1, int(batch_size))
+
+    def _compute_delta(self, gradient: np.ndarray) -> np.ndarray:
+        return -self.learning_rate * gradient
+
+    def _stochastic_gradient(self) -> np.ndarray:
+        grad = self._raw_gradient()
+        if self.noise_variance <= 0.0:
+            return grad
+        noise_std = np.sqrt(self.noise_variance / float(self.batch_size))
+        noise = self._rng.normal(loc=0.0, scale=noise_std, size=2)
+        return grad + noise
 
 
 class MomentumOptimizer(BaseOptimizer):
@@ -127,6 +193,7 @@ class MomentumOptimizer(BaseOptimizer):
 
     def _compute_delta(self, gradient: np.ndarray) -> np.ndarray:
         self.velocity = self.momentum_coefficient * self.velocity - self.learning_rate * gradient
+        self.velocity = self._sanitize_vector(self.velocity, self.max_abs_delta)
         return self.velocity
 
 
@@ -170,13 +237,15 @@ class AdamOptimizer(BaseOptimizer):
         beta1 = self.momentum_coefficient
         self.m = beta1 * self.m + (1.0 - beta1) * gradient
         self.v = self.beta2 * self.v + (1.0 - self.beta2) * (gradient * gradient)
+        self.m = self._sanitize_vector(self.m, self.max_abs_gradient)
+        self.v = self._sanitize_vector(self.v, self.max_abs_gradient)
 
         t = self.step_count + 1
         m_hat = self.m / (1.0 - beta1 ** t)
         v_hat = self.v / (1.0 - self.beta2 ** t)
 
         update = self.learning_rate * m_hat / (np.sqrt(v_hat) + self.epsilon)
-        return -update
+        return -self._sanitize_vector(update, self.max_abs_delta)
 
 
 class OptimizerFactory:
@@ -190,15 +259,35 @@ class OptimizerFactory:
         initial_y: float,
         learning_rate: float = 0.01,
         momentum_coefficient: float = 0.9,
+        batch_size: int = 16,
         noise_variance: float = 0.0,
         rng_seed: int | None = None,
     ) -> BaseOptimizer:
+        if optimizer_type == OptimizerType.BATCH_GRADIENT_DESCENT:
+            return BatchGradientDescentOptimizer(
+                loss_type=loss_type,
+                initial_x=initial_x,
+                initial_y=initial_y,
+                learning_rate=learning_rate,
+                noise_variance=noise_variance,
+                rng_seed=rng_seed,
+            )
         if optimizer_type == OptimizerType.GRADIENT_DESCENT:
             return GradientDescentOptimizer(
                 loss_type=loss_type,
                 initial_x=initial_x,
                 initial_y=initial_y,
                 learning_rate=learning_rate,
+                noise_variance=noise_variance,
+                rng_seed=rng_seed,
+            )
+        if optimizer_type == OptimizerType.MINI_BATCH_SGD:
+            return MiniBatchSGDOptimizer(
+                loss_type=loss_type,
+                initial_x=initial_x,
+                initial_y=initial_y,
+                learning_rate=learning_rate,
+                batch_size=batch_size,
                 noise_variance=noise_variance,
                 rng_seed=rng_seed,
             )

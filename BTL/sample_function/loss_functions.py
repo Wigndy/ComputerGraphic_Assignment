@@ -8,6 +8,7 @@ import numpy as np
 
 
 class LossFunctionType(Enum):
+    BEALE = "beale"
     HIMMELBLAU = "himmelblau"
     ROSENBROCK = "rosenbrock"
     BOOTH = "booth"
@@ -23,6 +24,22 @@ class LossFunction:
 
 
 class LossFunctionManager:
+    @staticmethod
+    def _beale(x: float, y: float) -> float:
+        t1 = 1.5 - x + x * y
+        t2 = 2.25 - x + x * y * y
+        t3 = 2.625 - x + x * y * y * y
+        return float(t1 * t1 + t2 * t2 + t3 * t3)
+
+    @staticmethod
+    def _beale_grad(x: float, y: float) -> np.ndarray:
+        t1 = 1.5 - x + x * y
+        t2 = 2.25 - x + x * y * y
+        t3 = 2.625 - x + x * y * y * y
+        dfdx = 2.0 * t1 * (-1.0 + y) + 2.0 * t2 * (-1.0 + y * y) + 2.0 * t3 * (-1.0 + y * y * y)
+        dfdy = 2.0 * t1 * x + 4.0 * t2 * x * y + 6.0 * t3 * x * y * y
+        return np.array([dfdx, dfdy], dtype=np.float64)
+
     @staticmethod
     def _himmelblau(x: float, y: float) -> float:
         term1 = x * x + y - 11.0
@@ -72,6 +89,12 @@ class LossFunctionManager:
         return np.array([2.0 * x, 2.0 * y], dtype=np.float64)
 
     _REGISTRY: Dict[LossFunctionType, LossFunction] = {
+        LossFunctionType.BEALE: LossFunction(
+            loss_type=LossFunctionType.BEALE,
+            label="Beale",
+            evaluate=_beale.__func__,
+            gradient=_beale_grad.__func__,
+        ),
         LossFunctionType.HIMMELBLAU: LossFunction(
             loss_type=LossFunctionType.HIMMELBLAU,
             label="Himmelblau",

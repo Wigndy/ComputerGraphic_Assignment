@@ -9,8 +9,9 @@ from geometry import MeshDrawable
 class TrajectoryDrawable:
     """Lightweight GL line-strip drawable for optimizer trajectories."""
 
-    def __init__(self, color):
+    def __init__(self, color, line_width=2.5):
         self.color = np.asarray(color, dtype=np.float32)
+        self.line_width = float(max(1.0, line_width))
         self.shader = Shader(self._vertex_shader(), self._fragment_shader())
         self.vao = VAO()
         self.vertex_count = 0
@@ -40,6 +41,16 @@ class TrajectoryDrawable:
         GL.glBufferData(GL.GL_ARRAY_BUFFER, colors, GL.GL_DYNAMIC_DRAW)
         self.vao.deactivate()
 
+    def _safe_line_width(self):
+        # macOS core profile often supports only width=1 for line primitives.
+        try:
+            width_range = GL.glGetFloatv(GL.GL_ALIASED_LINE_WIDTH_RANGE)
+            w_min = float(width_range[0])
+            w_max = float(width_range[1])
+            return float(np.clip(self.line_width, w_min, w_max))
+        except Exception:
+            return 1.0
+
     def draw(self, projection, view):
         if not self.initialized or self.vertex_count < 2:
             return
@@ -51,7 +62,9 @@ class TrajectoryDrawable:
         GL.glUniformMatrix4fv(mv_loc, 1, True, np.asarray(view, dtype=np.float32))
 
         self.vao.activate()
+        GL.glLineWidth(self._safe_line_width())
         GL.glDrawArrays(GL.GL_LINE_STRIP, 0, self.vertex_count)
+        GL.glLineWidth(1.0)
         self.vao.deactivate()
 
     @staticmethod
@@ -92,6 +105,90 @@ def _create_lines_drawable(vertices, colors):
     normals = np.zeros((count, 3), dtype=np.float32)
     texcoords = np.zeros((count, 2), dtype=np.float32)
     return MeshDrawable(verts, normals, texcoords, colors=cols, primitive=GL.GL_LINES)
+
+
+class PointSetDrawable:
+    """Simple GL points drawable used for 2D contour optimizer markers."""
+
+    def __init__(self):
+        self.shader = Shader(self._vertex_shader(), self._fragment_shader())
+        self.vao = VAO()
+        self.vertex_count = 0
+        self.initialized = False
+
+    def update_points(self, points_xyz, colors_rgb):
+        points = np.asarray(points_xyz, dtype=np.float32)
+        colors = np.asarray(colors_rgb, dtype=np.float32)
+        if points.ndim != 2 or points.shape[1] != 3:
+            raise ValueError("points_xyz must have shape (N, 3)")
+        if colors.shape != points.shape:
+            raise ValueError("colors_rgb must have shape (N, 3)")
+
+        self.vertex_count = int(points.shape[0])
+        if self.vertex_count <= 0:
+            return
+
+        if not self.initialized:
+            self.vao.add_vbo(0, points, ncomponents=3, dtype=GL.GL_FLOAT, normalized=False, stride=0, offset=None)
+            self.vao.add_vbo(1, colors, ncomponents=3, dtype=GL.GL_FLOAT, normalized=False, stride=0, offset=None)
+            self.initialized = True
+            return
+
+        self.vao.activate()
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.vao.vbo[0])
+        GL.glBufferData(GL.GL_ARRAY_BUFFER, points, GL.GL_DYNAMIC_DRAW)
+        GL.glBindBuffer(GL.GL_ARRAY_BUFFER, self.vao.vbo[1])
+        GL.glBufferData(GL.GL_ARRAY_BUFFER, colors, GL.GL_DYNAMIC_DRAW)
+        self.vao.deactivate()
+
+    def draw(self, projection, view, point_size=9.0):
+        if not self.initialized or self.vertex_count <= 0:
+            return
+
+        GL.glUseProgram(self.shader.render_idx)
+        proj_loc = GL.glGetUniformLocation(self.shader.render_idx, "projection")
+        mv_loc = GL.glGetUniformLocation(self.shader.render_idx, "modelview")
+        GL.glUniformMatrix4fv(proj_loc, 1, True, np.asarray(projection, dtype=np.float32))
+        GL.glUniformMatrix4fv(mv_loc, 1, True, np.asarray(view, dtype=np.float32))
+        GL.glUniform1f(GL.glGetUniformLocation(self.shader.render_idx, "point_size"), float(point_size))
+
+        self.vao.activate()
+        GL.glDrawArrays(GL.GL_POINTS, 0, self.vertex_count)
+        self.vao.deactivate()
+
+    @staticmethod
+    def _vertex_shader():
+        return """
+#version 330 core
+layout(location = 0) in vec3 position;
+layout(location = 1) in vec3 color;
+
+uniform mat4 projection;
+uniform mat4 modelview;
+uniform float point_size;
+
+out vec3 v_color;
+
+void main(){
+    v_color = color;
+    gl_PointSize = point_size;
+    gl_Position = projection * modelview * vec4(position, 1.0);
+}
+"""
+
+    @staticmethod
+    def _fragment_shader():
+        return """
+#version 330 core
+in vec3 v_color;
+out vec4 fragColor;
+
+void main(){
+    vec2 c = gl_PointCoord * 2.0 - 1.0;
+    if (dot(c, c) > 1.0) discard;
+    fragColor = vec4(v_color, 1.0);
+}
+"""
 
 
 def _glyph_segments(letter):
@@ -191,6 +288,20 @@ class CoordinateAxesOverlay:
             ),
         ]
 
+    @staticmethod
+    def _draw_colored_mesh(drawable, projection, view, model, light_1_enabled, light_2_enabled, brightness):
+        drawable.draw(
+            projection,
+            view,
+            model,
+            shading_mode=MeshDrawable.MODE_COLOR,
+            lighting_algorithm="phong",
+            light_1_enabled=light_1_enabled,
+            light_2_enabled=light_2_enabled,
+            brightness=brightness,
+            show_depth_map=False,
+        )
+
     def draw(self, category_idx, projection, view, show=True, light_1_enabled=True, light_2_enabled=False, brightness=1.0):
         if not show:
             return
@@ -200,26 +311,22 @@ class CoordinateAxesOverlay:
             return
 
         identity = np.identity(4, dtype=np.float32)
-        self.axes_drawable.draw(
+        self._draw_colored_mesh(
+            self.axes_drawable,
             projection,
             view,
             identity,
-            shading_mode=MeshDrawable.MODE_COLOR,
-            lighting_algorithm="phong",
-            light_1_enabled=light_1_enabled,
-            light_2_enabled=light_2_enabled,
-            brightness=brightness,
-            show_depth_map=False,
+            light_1_enabled,
+            light_2_enabled,
+            brightness,
         )
         for label in self.axis_label_drawables:
-            label.draw(
+            self._draw_colored_mesh(
+                label,
                 projection,
                 view,
                 identity,
-                shading_mode=MeshDrawable.MODE_COLOR,
-                lighting_algorithm="phong",
-                light_1_enabled=light_1_enabled,
-                light_2_enabled=light_2_enabled,
-                brightness=brightness,
-                show_depth_map=False,
+                light_1_enabled,
+                light_2_enabled,
+                brightness,
             )

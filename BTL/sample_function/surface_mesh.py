@@ -24,30 +24,63 @@ class SurfaceMeshData:
 class LossSurfaceMeshGenerator:
     """Generate a 2D regular grid surface z=f(x, y) with colors and normals."""
 
+    Z_LOG_SCALE = 1.0
+
     @staticmethod
-    def heatmap_color(z: float, z_min: float, z_max: float) -> np.ndarray:
-        """
-        Map z to RGB in [0,1] using a simple heatmap:
-        blue -> cyan -> green -> yellow -> red.
-        """
-        span = max(z_max - z_min, 1e-12)
-        t = float(np.clip((z - z_min) / span, 0.0, 1.0))
-
-        # Piecewise linear interpolation with 4 segments.
-        stops = np.array([
-            [0.0, 0.0, 1.0],  # blue
-            [0.0, 1.0, 1.0],  # cyan
-            [0.0, 1.0, 0.0],  # green
-            [1.0, 1.0, 0.0],  # yellow
-            [1.0, 0.0, 0.0],  # red
-        ], dtype=np.float64)
-
-        scaled = t * 4.0
-        idx = min(int(scaled), 3)
-        local_t = scaled - idx
+    def _map_color(t: float, stops: np.ndarray) -> np.ndarray:
+        t = float(np.clip(t, 0.0, 1.0))
+        n = int(stops.shape[0])
+        if n <= 1:
+            return np.array(stops[0], dtype=np.float64)
+        scaled = t * float(n - 1)
+        idx = min(int(scaled), n - 2)
+        local_t = scaled - float(idx)
         c0 = stops[idx]
         c1 = stops[idx + 1]
         return (1.0 - local_t) * c0 + local_t * c1
+
+    @classmethod
+    def inferno_color(cls, z: float, z_min: float, z_max: float) -> np.ndarray:
+        span = max(z_max - z_min, 1e-12)
+        t = (float(z) - float(z_min)) / span
+        stops = np.array([
+            [0.00, 0.00, 0.02],
+            [0.17, 0.04, 0.34],
+            [0.44, 0.11, 0.43],
+            [0.71, 0.22, 0.35],
+            [0.90, 0.38, 0.18],
+            [0.98, 0.64, 0.22],
+            [0.99, 0.88, 0.64],
+        ], dtype=np.float64)
+        return cls._map_color(t, stops)
+
+    @classmethod
+    def viridis_color(cls, z: float, z_min: float, z_max: float) -> np.ndarray:
+        span = max(z_max - z_min, 1e-12)
+        t = (float(z) - float(z_min)) / span
+        stops = np.array([
+            [0.27, 0.00, 0.33],
+            [0.23, 0.32, 0.55],
+            [0.13, 0.57, 0.55],
+            [0.37, 0.78, 0.38],
+            [0.99, 0.91, 0.14],
+        ], dtype=np.float64)
+        return cls._map_color(t, stops)
+
+    @classmethod
+    def display_z(cls, z_raw: float) -> float:
+        """Render-only Z transform: z' = log(1 + f(x,y))."""
+        z = max(0.0, float(z_raw))
+        return float(cls.Z_LOG_SCALE * np.log1p(z))
+
+    @classmethod
+    def display_slopes(cls, z_raw: float, fx_raw: float, fy_raw: float) -> tuple[float, float]:
+        """Derivatives for z' = s*log(1 + z), with z clamped at 0 for stability."""
+        z = float(z_raw)
+        if z <= 0.0:
+            return 0.0, 0.0
+        scale = float(cls.Z_LOG_SCALE) / max(1e-9, (1.0 + z))
+        return float(scale * fx_raw), float(scale * fy_raw)
 
     @staticmethod
     def _normalize(v: np.ndarray) -> np.ndarray:
@@ -93,7 +126,14 @@ class LossSurfaceMeshGenerator:
         colors = np.zeros((count, 3), dtype=np.float64)
         texcoords = np.zeros((count, 2), dtype=np.float64)
 
+        x_values = np.zeros(count, dtype=np.float64)
+        y_values = np.zeros(count, dtype=np.float64)
+        u_values = np.zeros(count, dtype=np.float64)
+        v_values = np.zeros(count, dtype=np.float64)
         z_values = np.zeros(count, dtype=np.float64)
+        fx_values = np.zeros(count, dtype=np.float64)
+        fy_values = np.zeros(count, dtype=np.float64)
+        z_display_values = np.zeros(count, dtype=np.float64)
 
         # 1) Evaluate surface and analytical-gradient normals at grid vertices.
         # Surface paramization: S(x, y) = (x, y, f(x,y))
@@ -105,19 +145,33 @@ class LossSurfaceMeshGenerator:
                 v = j / float(ny - 1)
                 z = LossFunctionManager.evaluate(loss_type, float(x), float(y))
                 grad = LossFunctionManager.gradient(loss_type, float(x), float(y))
-                fx, fy = float(grad[0]), float(grad[1])
-
-                vertices[idx] = [x, y, z]
-                normals[idx] = cls._normalize(np.array([-fx, -fy, 1.0], dtype=np.float64))
-                texcoords[idx] = [u, v]
+                fx_raw, fy_raw = float(grad[0]), float(grad[1])
+                x_values[idx] = float(x)
+                y_values[idx] = float(y)
+                u_values[idx] = float(u)
+                v_values[idx] = float(v)
                 z_values[idx] = z
+                fx_values[idx] = fx_raw
+                fy_values[idx] = fy_raw
                 idx += 1
 
-        z_min = float(np.min(z_values))
-        z_max = float(np.max(z_values))
+        z_display_values = cls.Z_LOG_SCALE * np.log1p(np.maximum(z_values, 0.0))
+        z_min = 0.0
+        z_max = float(np.max(z_display_values)) if count > 0 else 0.0
 
         for k in range(count):
-            colors[k] = cls.heatmap_color(float(vertices[k, 2]), z_min, z_max)
+            z_disp = float(z_display_values[k])
+            fx_disp, fy_disp = cls.display_slopes(
+                float(z_values[k]),
+                float(fx_values[k]),
+                float(fy_values[k]),
+            )
+            vertices[k] = [x_values[k], y_values[k], z_disp]
+            normals[k] = cls._normalize(np.array([-fx_disp, -fy_disp, 1.0], dtype=np.float64))
+            texcoords[k] = [u_values[k], v_values[k]]
+
+        for k in range(count):
+            colors[k] = cls.inferno_color(float(z_display_values[k]), z_min, z_max)
 
         # 2) Build triangle index buffer (2 triangles per cell).
         tri_count = (nx - 1) * (ny - 1) * 2

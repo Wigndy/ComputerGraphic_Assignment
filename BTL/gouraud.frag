@@ -4,10 +4,11 @@ precision mediump float;
 
 // Receiving interpolated color from vertex shader
 in vec3 colorInterp;
+uniform float u_alpha;
 
 out vec4 fragColor;
 
 void main() {
   // Simply output the interpolated color (lighting was computed per-vertex)
-  fragColor = vec4(colorInterp, 1.0);
+  fragColor = vec4(colorInterp, u_alpha);
 }
