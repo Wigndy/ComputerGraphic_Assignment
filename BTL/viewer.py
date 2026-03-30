@@ -717,6 +717,9 @@ class Viewer:
             glfw.swap_buffers(self.win)
 
         self.impl.shutdown()
+        if self.win is not None:
+            glfw.destroy_window(self.win)
+            self.win = None
 
 
 def main():

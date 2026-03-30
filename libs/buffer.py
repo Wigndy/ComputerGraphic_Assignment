@@ -36,11 +36,25 @@ class VAO(object):
         self.deactivate()
 
 
+    @staticmethod
+    def _has_active_gl_context():
+        try:
+            import glfw
+            return bool(glfw.get_current_context())
+        except Exception:
+            return False
+
     def __del__(self):
-        GL.glDeleteVertexArrays(1, [self.vao])
-        GL.glDeleteBuffers(1, list(self.vbo.values()))
-        if self.ebo is not None:
-            GL.glDeleteBuffers(1, [self.ebo])
+        # Avoid deleting GL objects after context teardown.
+        try:
+            if not self._has_active_gl_context():
+                return
+            GL.glDeleteVertexArrays(1, [self.vao])
+            GL.glDeleteBuffers(1, list(self.vbo.values()))
+            if self.ebo is not None:
+                GL.glDeleteBuffers(1, [self.ebo])
+        except Exception:
+            pass
 
     def activate(self):
         GL.glBindVertexArray(self.vao)  # activated

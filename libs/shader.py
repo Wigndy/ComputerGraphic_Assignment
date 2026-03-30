@@ -24,10 +24,26 @@ class Shader:
                 print(GL.glGetProgramInfoLog(self.render_idx).decode('ascii'))
                 sys.exit(1)
 
+    @staticmethod
+    def _has_active_gl_context():
+        try:
+            import glfw
+            return bool(glfw.get_current_context())
+        except Exception:
+            return False
+
     def __del__(self):
-        GL.glUseProgram(0)
-        if self.render_idx:                      # if this is a valid shader object
-            GL.glDeleteProgram(self.render_idx)  # object dies => destroy GL object
+        # During interpreter shutdown, GL context may already be gone.
+        # Calling GL delete APIs in that state can crash native drivers.
+        try:
+            if not self._has_active_gl_context():
+                return
+            GL.glUseProgram(0)
+            if self.render_idx:                      # if this is a valid shader object
+                GL.glDeleteProgram(self.render_idx)  # object dies => destroy GL object
+        except Exception:
+            # Never let destructor-time cleanup crash application exit.
+            pass
 
     @staticmethod
     def _compile_shader(src, shader_type):
