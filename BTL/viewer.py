@@ -164,14 +164,6 @@ class Viewer:
 
         GL.glEnable(GL.GL_DEPTH_TEST)
         GL.glDepthFunc(GL.GL_LESS)
-
-        # self.impl = _create_imgui_renderer(self.win)
-        # glfw.set_key_callback(self.win, self.on_key)
-        # glfw.set_cursor_pos_callback(self.win, self.on_mouse_move)
-        # glfw.set_scroll_callback(self.win, self.on_scroll)
-        # glfw.set_framebuffer_size_callback(self.win, self.on_resize)
-        # fbw, fbh = glfw.get_framebuffer_size(self.win)
-        # self.on_resize(self.win, fbw, fbh)
         self.impl = _create_imgui_renderer(self.win)
 
         glfw.set_key_callback(self.win, self._dispatch_key)
