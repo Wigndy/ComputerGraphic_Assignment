@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>{{TITLE}}</title>
+  <style>
+    body{font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;line-height:1.6;margin:0;color:#111}
+    header{background:#0b74de;color:#fff;padding:18px 20px}
+    .container{max-width:980px;margin:20px auto;padding:0 20px}
+    a.navlink{color:#fff;margin-right:12px;text-decoration:none}
+    article{padding:18px;background:#fff;border-radius:6px;border:1px solid #eee}
+    pre{background:#0f1720;color:#dbeafe;padding:12px;border-radius:6px;overflow:auto}
+    footer{color:#666;font-size:13px;padding:24px 20px;text-align:center}
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+</head>
+<body>
+  <header>
+    <div class="container">
+      <h1>{{TITLE}}</h1>
+    </div>
+  </header>
+
+  <main class="container">
+    <article id="content">Đang tải...</article>
+  </main>
+
+  <footer>
+    <div class="container">Trở về: <a href="./index.html">Trang chính</a></div>
+  </footer>
+
+  <script>
+    (function(){
+      const mdPath = '{{MDPATH}}';
+      fetch(mdPath).then(r=>r.text()).then(md=>{
+        document.getElementById('content').innerHTML = marked.parse(md);
+      }).catch(e=>{
+        document.getElementById('content').textContent = 'Không thể tải nội dung: '+mdPath;
+      });
+    })();
+  </script>
+</body>
+</html>
