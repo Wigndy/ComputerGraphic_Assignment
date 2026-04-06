@@ -53,7 +53,7 @@ btl-landing-page/
 │       - Tools & resources
 │       - File organization
 │
-├── 📁 docs/
+├── 📁 submd/
 │   │
 │   ├── 📄 architecture.md            (8.4 KB)  🏛️  SYSTEM DESIGN
 │   │   └─ High-level architecture, module breakdown
@@ -118,10 +118,10 @@ btl-landing-page/
 ### Technical Documentation
 | File | Size | Words | Type |
 |------|------|-------|------|
-| docs/architecture.md | 8.4 KB | ~1,800 | Technical |
-| docs/algorithms.md | 10.2 KB | ~2,200 | Technical |
-| docs/shading-models.md | 9.3 KB | ~2,000 | Technical |
-| docs/loss-functions.md | 11.5 KB | ~2,500 | Technical |
+| submd/architecture.md | 8.4 KB | ~1,800 | Technical |
+| submd/algorithms.md | 10.2 KB | ~2,200 | Technical |
+| submd/shading-models.md | 9.3 KB | ~2,000 | Technical |
+| submd/loss-functions.md | 11.5 KB | ~2,500 | Technical |
 | **Subtotal** | **39.4 KB** | **~8,500** | **Docs** |
 
 ### **TOTAL**
@@ -142,10 +142,10 @@ btl-landing-page/
 - ✅ EXAMPLES.md - Code examples
 - ✅ INDEX.md - Navigation guide
 - ✅ ASSETS_TODO.md - Asset planning
-- ✅ docs/architecture.md - System design
-- ✅ docs/algorithms.md - Algorithm details
-- ✅ docs/shading-models.md - Rendering techniques
-- ✅ docs/loss-functions.md - Loss functions
+- ✅ submd/architecture.md - System design
+- ✅ submd/algorithms.md - Algorithm details
+- ✅ submd/shading-models.md - Rendering techniques
+- ✅ submd/loss-functions.md - Loss functions
 
 ### ⏳ TODO (7 items - Optional visual content)
 - [ ] assets/screenshots/demo-main.png
@@ -170,13 +170,13 @@ btl-landing-page/
 ### For Developers
 1. Setup: **INSTALLATION.md**
 2. APIs: **API.md**
-3. Design: **docs/architecture.md**
+3. Design: **submd/architecture.md**
 4. Code: **EXAMPLES.md**
 
 ### For Researchers
-1. Algorithms: **docs/algorithms.md**
-2. Math: **docs/loss-functions.md**
-3. Rendering: **docs/shading-models.md**
+1. Algorithms: **submd/algorithms.md**
+2. Math: **submd/loss-functions.md**
+3. Rendering: **submd/shading-models.md**
 4. Code: **EXAMPLES.md**
 
 ### For Navigation
@@ -184,8 +184,8 @@ btl-landing-page/
 - What can I do? → **README.md** + **FEATURES.md**
 - How do I install? → **INSTALLATION.md**
 - How do I code? → **API.md** + **EXAMPLES.md**
-- How does it work? → **docs/architecture.md**
-- Detailed math? → **docs/algorithms.md** + **docs/loss-functions.md**
+- How does it work? → **submd/architecture.md**
+- Detailed math? → **submd/algorithms.md** + **submd/loss-functions.md**
 
 ---
 
@@ -195,7 +195,7 @@ btl-landing-page/
 - ✅ **Beginners** - Streamlined getting started
 - ✅ **Artists/Designers** - Visual features, materials, lighting
 - ✅ **Students** - Optimization algorithms, loss functions
-- ✅ **Developers** - API docs, code examples, architecture
+- ✅ **Developers** - API submd, code examples, architecture
 - ✅ **Researchers** - Mathematical details, analysis tools
 - ✅ **Contributors** - Extension guides, design patterns
 
@@ -215,7 +215,7 @@ btl-landing-page/
 - ✅ **Practical** - Code examples for every feature
 - ✅ **Academic** - Mathematical equations & proofs
 - ✅ **Accessible** - Multiple learning paths
-- ✅ **Cross-linked** - Easy navigation between docs
+- ✅ **Cross-linked** - Easy navigation between submd
 
 ---
 
@@ -310,15 +310,15 @@ Before publishing to GitHub:
 - ✅ Troubleshooting (INSTALLATION.md#common-issues)
 - ✅ API reference (API.md)
 - ✅ Code examples (EXAMPLES.md)
-- ✅ Architecture docs (docs/architecture.md)
-- ✅ Algorithm details (docs/algorithms.md)
+- ✅ Architecture submd (submd/architecture.md)
+- ✅ Algorithm details (submd/algorithms.md)
 
 ### Access Points
 1. **Quick troubleshooting:** INDEX.md → Support Resources
 2. **API questions:** API.md
 3. **Code help:** EXAMPLES.md
 4. **Installation issues:** INSTALLATION.md
-5. **Design questions:** docs/architecture.md
+5. **Design questions:** submd/architecture.md
 
 ---
 

@@ -15,7 +15,7 @@ btl-landing-page/
 ├── EXAMPLES.md                  # Code examples & tutorials
 ├── QUICK_START.md               # Quick getting started (this file)
 │
-├── docs/
+├── submd/
 │   ├── architecture.md          # System design & components
 │   ├── algorithms.md            # Optimization algorithms (5 types)
 │   ├── shading-models.md        # Rendering techniques (5 models)
@@ -49,16 +49,16 @@ btl-landing-page/
 
 ### For Developers
 
-1. **Architecture:** [docs/architecture.md](./docs/architecture.md) - System design
+1. **Architecture:** [submd/architecture.md](./submd/architecture.md) - System design
 2. **API Reference:** [API.md](./API.md) - Class/function reference
 3. **Examples:** [EXAMPLES.md](./EXAMPLES.md) - Usage patterns
-4. **Deep Dive:** [docs/](./docs/) - Technical details
+4. **Deep Dive:** [submd/](./submd/) - Technical details
 
 ### For Researchers
 
-1. **Algorithms:** [docs/algorithms.md](./docs/algorithms.md) - 5 optimizers explained
-2. **Loss Functions:** [docs/loss-functions.md](./docs/loss-functions.md) - Mathematical details
-3. **Shading:** [docs/shading-models.md](./docs/shading-models.md) - Rendering techniques
+1. **Algorithms:** [submd/algorithms.md](./submd/algorithms.md) - 5 optimizers explained
+2. **Loss Functions:** [submd/loss-functions.md](./submd/loss-functions.md) - Mathematical details
+3. **Shading:** [submd/shading-models.md](./submd/shading-models.md) - Rendering techniques
 4. **Examples:** [EXAMPLES.md](./EXAMPLES.md#example-4-custom-loss-function-visualization) - Visualization code
 
 ### For Troubleshooting
@@ -156,7 +156,7 @@ python BTL/viewer.py
 - Tips & tricks
 - Troubleshooting examples
 
-### docs/architecture.md
+### submd/architecture.md
 **Purpose:** System design & internals  
 **Read if:** Contributing or understanding design  
 **Key sections:**
@@ -165,7 +165,7 @@ python BTL/viewer.py
 - Data flow diagrams
 - Extension points
 
-### docs/algorithms.md
+### submd/algorithms.md
 **Purpose:** Optimization algorithms explained  
 **Read if:** Understanding 5 optimizers mathematically  
 **Key sections:**
@@ -174,7 +174,7 @@ python BTL/viewer.py
 - Visual behavior
 - Convergence analysis
 
-### docs/shading-models.md
+### submd/shading-models.md
 **Purpose:** Rendering techniques deep dive  
 **Read if:** Understanding visual quality choices  
 **Key sections:**
@@ -183,7 +183,7 @@ python BTL/viewer.py
 - Shader code
 - Use cases & performance
 
-### docs/loss-functions.md
+### submd/loss-functions.md
 **Purpose:** Loss functions mathematically  
 **Read if:** Understanding benchmark functions  
 **Key sections:**
@@ -202,10 +202,10 @@ python BTL/viewer.py
 - ✅ [INSTALLATION.md](./INSTALLATION.md) - Setup guide
 - ✅ [API.md](./API.md) - API reference
 - ✅ [EXAMPLES.md](./EXAMPLES.md) - Code examples
-- ✅ [docs/architecture.md](./docs/architecture.md) - Architecture
-- ✅ [docs/algorithms.md](./docs/algorithms.md) - Algorithms
-- ✅ [docs/shading-models.md](./docs/shading-models.md) - Shading
-- ✅ [docs/loss-functions.md](./docs/loss-functions.md) - Loss functions
+- ✅ [submd/architecture.md](./submd/architecture.md) - Architecture
+- ✅ [submd/algorithms.md](./submd/algorithms.md) - Algorithms
+- ✅ [submd/shading-models.md](./submd/shading-models.md) - Shading
+- ✅ [submd/loss-functions.md](./submd/loss-functions.md) - Loss functions
 
 ### TODO - Placeholders for Visual Content
 
@@ -213,10 +213,10 @@ python BTL/viewer.py
 |-------------|------|----------------|
 | [README.md](./README.md#-demo--screenshots) | Screenshots/GIF | `[TODO: Screenshot/GIF]` |
 | [FEATURES.md](./FEATURES.md) | Descriptions only | No images yet |
-| [docs/architecture.md](./docs/architecture.md) | ASCII diagrams | Included |
-| [docs/algorithms.md](./docs/algorithms.md) | Math equations | Included |
-| [docs/shading-models.md](./docs/shading-models.md) | Shader code | Included |
-| [docs/loss-functions.md](./docs/loss-functions.md) | Surface plots | `[TODO: 3D plots]` |
+| [submd/architecture.md](./submd/architecture.md) | ASCII diagrams | Included |
+| [submd/algorithms.md](./submd/algorithms.md) | Math equations | Included |
+| [submd/shading-models.md](./submd/shading-models.md) | Shader code | Included |
+| [submd/loss-functions.md](./submd/loss-functions.md) | Surface plots | `[TODO: 3D plots]` |
 
 ### Next Steps to Complete
 
@@ -242,7 +242,7 @@ python BTL/viewer.py
 ### Cross-links
 - Feature mentioned → See [FEATURES.md](./FEATURES.md)
 - API needed → Check [API.md](./API.md)
-- Math details → Review [docs/algorithms.md](./docs/algorithms.md)
+- Math details → Review [submd/algorithms.md](./submd/algorithms.md)
 - Setup issue → Go to [INSTALLATION.md](./INSTALLATION.md)
 - Want code? → Find in [EXAMPLES.md](./EXAMPLES.md)
 
@@ -251,11 +251,11 @@ python BTL/viewer.py
 |--------------|---------|
 | Camera controls | [FEATURES.md](./FEATURES.md#iii-camera-system) |
 | Learning rate tuning | [EXAMPLES.md](./EXAMPLES.md#example-4) |
-| Shader code | [docs/shading-models.md](./docs/shading-models.md) |
-| Optimizer math | [docs/algorithms.md](./docs/algorithms.md) |
+| Shader code | [submd/shading-models.md](./submd/shading-models.md) |
+| Optimizer math | [submd/algorithms.md](./submd/algorithms.md) |
 | Memory issues | [INSTALLATION.md](./INSTALLATION.md#issue-6-performance-issues-low-fps) |
-| Phong equation | [docs/shading-models.md](./docs/shading-models.md#mathematical-model-1) |
-| Rosenbrock valley | [docs/loss-functions.md](./docs/loss-functions.md#the-rosenbrock-valley) |
+| Phong equation | [submd/shading-models.md](./submd/shading-models.md#mathematical-model-1) |
+| Rosenbrock valley | [submd/loss-functions.md](./submd/loss-functions.md#the-rosenbrock-valley) |
 
 ---
 
@@ -306,8 +306,8 @@ python BTL/viewer.py
 - Q: "What is...?" → [FEATURES.md](./FEATURES.md)
 - Q: "Why isn't it working?" → [INSTALLATION.md](./INSTALLATION.md)
 - Q: "Show me the code" → [API.md](./API.md)
-- Q: "How does it work?" → [docs/architecture.md](./docs/architecture.md)
-- Q: "What's the math?" → [docs/](./docs/)
+- Q: "How does it work?" → [submd/architecture.md](./submd/architecture.md)
+- Q: "What's the math?" → [submd/](./submd/)
 
 ---
 
@@ -320,7 +320,7 @@ python BTL/viewer.py
 | API question | [API.md](./API.md) |
 | Code example needed | [EXAMPLES.md](./EXAMPLES.md) |
 | Performance issue | [INSTALLATION.md](./INSTALLATION.md#issue-6-performance-issues-low-fps) |
-| Math details | [docs/algorithms.md](./docs/algorithms.md) and [docs/loss-functions.md](./docs/loss-functions.md) |
+| Math details | [submd/algorithms.md](./submd/algorithms.md) and [submd/loss-functions.md](./submd/loss-functions.md) |
 
 ---
 
@@ -333,10 +333,10 @@ python BTL/viewer.py
 | INSTALLATION.md | ~6KB | Guide | April 2026 |
 | API.md | ~7KB | Reference | April 2026 |
 | EXAMPLES.md | ~9KB | Tutorial | April 2026 |
-| docs/architecture.md | ~8KB | Technical | April 2026 |
-| docs/algorithms.md | ~10KB | Technical | April 2026 |
-| docs/shading-models.md | ~9KB | Technical | April 2026 |
-| docs/loss-functions.md | ~11KB | Technical | April 2026 |
+| submd/architecture.md | ~8KB | Technical | April 2026 |
+| submd/algorithms.md | ~10KB | Technical | April 2026 |
+| submd/shading-models.md | ~9KB | Technical | April 2026 |
+| submd/loss-functions.md | ~11KB | Technical | April 2026 |
 | **TOTAL** | **~72KB** | **9 files** | April 2026 |
 
 ---
@@ -346,27 +346,27 @@ python BTL/viewer.py
 ### Path 1: Artist/Designer
 1. [README.md](./README.md) - Overview
 2. [FEATURES.md](./FEATURES.md#iv-lighting-system) - Lighting & materials
-3. [docs/shading-models.md](./docs/shading-models.md) - Visual quality
+3. [submd/shading-models.md](./submd/shading-models.md) - Visual quality
 4. [EXAMPLES.md](./EXAMPLES.md#example-8-material-experimentation) - Experiment
 
 ### Path 2: Student Learning ML
 1. [README.md](./README.md) - Overview
 2. [FEATURES.md](./FEATURES.md#v-optimizer-visualization) - Optimizers
-3. [docs/algorithms.md](./docs/algorithms.md) - Algorithm details
-4. [docs/loss-functions.md](./docs/loss-functions.md) - Benchmark functions
+3. [submd/algorithms.md](./submd/algorithms.md) - Algorithm details
+4. [submd/loss-functions.md](./submd/loss-functions.md) - Benchmark functions
 5. [EXAMPLES.md](./EXAMPLES.md#example-5-compare-all-optimizers) - Experiments
 
 ### Path 3: Developer/Contributor
 1. [INSTALLATION.md](./INSTALLATION.md) - Setup
 2. [API.md](./API.md) - Classes & functions
-3. [docs/architecture.md](./docs/architecture.md) - Design
+3. [submd/architecture.md](./submd/architecture.md) - Design
 4. [EXAMPLES.md](./EXAMPLES.md) - Code patterns
 5. [README.md](./README.md#-development) - Contributing
 
 ### Path 4: Physicist/Mathematician
-1. [docs/algorithms.md](./docs/algorithms.md) - Algorithm math
-2. [docs/loss-functions.md](./docs/loss-functions.md) - Function analysis
-3. [docs/shading-models.md](./docs/shading-models.md) - Rendering math
+1. [submd/algorithms.md](./submd/algorithms.md) - Algorithm math
+2. [submd/loss-functions.md](./submd/loss-functions.md) - Function analysis
+3. [submd/shading-models.md](./submd/shading-models.md) - Rendering math
 4. [API.md](./API.md) - Implementation details
 5. [EXAMPLES.md](./EXAMPLES.md#example-11) - Batch analysis
 

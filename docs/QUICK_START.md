@@ -39,10 +39,10 @@
 ### Deep Dives (Technical)
 | File | What It Is | Read Time |
 |------|-----------|-----------|
-| **docs/architecture.md** | How it's built | 15 min |
-| **docs/algorithms.md** | Optimization math | 20 min |
-| **docs/shading-models.md** | Graphics techniques | 15 min |
-| **docs/loss-functions.md** | Loss landscapes | 20 min |
+| **submd/architecture.md** | How it's built | 15 min |
+| **submd/algorithms.md** | Optimization math | 20 min |
+| **submd/shading-models.md** | Graphics techniques | 15 min |
+| **submd/loss-functions.md** | Loss landscapes | 20 min |
 
 ### Planning
 | File | What It Is | Status |
@@ -69,27 +69,27 @@
 2. INSTALLATION.md (5 min) → Setup
 3. API.md (15 min) → What functions exist
 4. EXAMPLES.md (30 min) → Copy-paste examples
-5. docs/architecture.md (15 min) → How components work
+5. submd/architecture.md (15 min) → How components work
 ```
 **Total time: ~60 min**
 
 ### 🔬 I'm Interested in Algorithms
 ```
 1. README.md (2 min) → Overview
-2. docs/algorithms.md (20 min) → BGD, SGD, Momentum, Adam
-3. docs/loss-functions.md (20 min) → Optimization landscapes
+2. submd/algorithms.md (20 min) → BGD, SGD, Momentum, Adam
+3. submd/loss-functions.md (20 min) → Optimization landscapes
 4. EXAMPLES.md (30 min) → See it in action
-5. docs/architecture.md (15 min) → How it's visualized
+5. submd/architecture.md (15 min) → How it's visualized
 ```
 **Total time: ~85 min**
 
 ### 🎨 I Care About Graphics
 ```
 1. README.md (2 min) → Overview
-2. docs/shading-models.md (15 min) → Flat, Gouraud, Phong, PhongEx
+2. submd/shading-models.md (15 min) → Flat, Gouraud, Phong, PhongEx
 3. FEATURES.md (10 min) → Lighting, materials, cameras
 4. EXAMPLES.md (30 min) → Code to change visuals
-5. docs/architecture.md (15 min) → Rendering pipeline
+5. submd/architecture.md (15 min) → Rendering pipeline
 ```
 **Total time: ~70 min**
 
@@ -110,16 +110,16 @@
 → **API.md** (15 minutes) + **EXAMPLES.md** (30 minutes)
 
 ### "How does optimization work?"
-→ **docs/algorithms.md** (20 minutes)
+→ **submd/algorithms.md** (20 minutes)
 
 ### "What are these loss functions?"
-→ **docs/loss-functions.md** (20 minutes)
+→ **submd/loss-functions.md** (20 minutes)
 
 ### "How's the code organized?"
-→ **docs/architecture.md** (15 minutes)
+→ **submd/architecture.md** (15 minutes)
 
 ### "How does shading work?"
-→ **docs/shading-models.md** (15 minutes)
+→ **submd/shading-models.md** (15 minutes)
 
 ### "I'm lost, help!"
 → **INDEX.md** (has navigation & reading paths)
@@ -188,7 +188,7 @@ Want to understand how BTL works?
 README.md (2 min) 
     ↓ Shows diagram of components
     
-docs/architecture.md (15 min)
+submd/architecture.md (15 min)
     ↓ Explains each component
     
 API.md (15 min)
@@ -212,10 +212,10 @@ API.md                 7.3 KB
 EXAMPLES.md            9.7 KB
 INDEX.md               7.1 KB
 ASSETS_TODO.md         8.9 KB
-docs/architecture.md   8.4 KB
-docs/algorithms.md    10.2 KB
-docs/shading.md        9.3 KB
-docs/loss.md          11.5 KB
+submd/architecture.md   8.4 KB
+submd/algorithms.md    10.2 KB
+submd/shading.md        9.3 KB
+submd/loss.md          11.5 KB
 ────────────────────────────
 TOTAL                 91.2 KB
 ```
@@ -330,10 +330,10 @@ All documented with examples!
 | How do I install? | INSTALLATION.md | Installation steps |
 | What features exist? | FEATURES.md | Features list |
 | How do I code? | API.md, EXAMPLES.md | Reference & examples |
-| How does it work? | docs/architecture.md | System design |
-| How does optimization work? | docs/algorithms.md | Algorithm explanations |
-| What about math? | docs/loss-functions.md, docs/algorithms.md | Equations & proofs |
-| How do I render different shading? | docs/shading-models.md | Shader code & examples |
+| How does it work? | submd/architecture.md | System design |
+| How does optimization work? | submd/algorithms.md | Algorithm explanations |
+| What about math? | submd/loss-functions.md, submd/algorithms.md | Equations & proofs |
+| How do I render different shading? | submd/shading-models.md | Shader code & examples |
 | I'm still lost | INDEX.md | Navigation guide |
 
 ---
@@ -379,8 +379,8 @@ All documented with examples!
 Pick your path:
 - Beginner: EXAMPLES.md
 - Developer: API.md → EXAMPLES.md
-- Researcher: docs/algorithms.md
-- Graphics: docs/shading-models.md
+- Researcher: submd/algorithms.md
+- Graphics: submd/shading-models.md
 ```
 
 ---

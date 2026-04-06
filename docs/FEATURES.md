@@ -501,10 +501,10 @@ display_z = log(1 + f(x,y))     # Applied for visualization
 - Smooth animation between epochs
 
 ### Custom Loss Functions
-See [docs/loss-functions.md](../docs/loss-functions.md) for extending with custom functions.
+See [submd/loss-functions.md](../submd/loss-functions.md) for extending with custom functions.
 
 ### Shader Extension
-See [docs/shading-models.md](../docs/shading-models.md) for creating custom shaders.
+See [submd/shading-models.md](../submd/shading-models.md) for creating custom shaders.
 
 ---
 

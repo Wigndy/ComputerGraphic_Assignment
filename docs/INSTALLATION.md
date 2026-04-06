@@ -74,7 +74,7 @@ python BTL/viewer.py
 
 ### Option 3: Manual Installation (Advanced)
 
-For detailed per-package installation, see [Manual Installation](./docs/installation-advanced.md).
+For detailed per-package installation, see [Manual Installation](./submd/installation-advanced.md).
 
 ---
 
@@ -337,7 +337,7 @@ After successful installation:
 1. **Read [README.md](./README.md)** - Overview of features
 2. **Read [FEATURES.md](./FEATURES.md)** - Detailed feature breakdown
 3. **Try [EXAMPLES.md](./EXAMPLES.md)** - Code examples
-4. **Explore [docs/](./docs/)** - Technical deep dives
+4. **Explore [submd/](./submd/)** - Technical deep dives
 5. **Modify the code** - Experiment with parameters
 
 ---
@@ -347,7 +347,7 @@ After successful installation:
 - **Error in terminal?** Check troubleshooting above
 - **Want to understand a feature?** Read [FEATURES.md](./FEATURES.md)
 - **Want code examples?** See [EXAMPLES.md](./EXAMPLES.md)
-- **Technical question?** See [docs/architecture.md](./docs/architecture.md)
+- **Technical question?** See [submd/architecture.md](./submd/architecture.md)
 
 ---
 
