@@ -4,7 +4,7 @@
 
 Ho Chi Minh City University of Technology (HCMUT) – Vietnam National University-Ho Chi Minh City (VNU-HCMC).
 
-Deep learning and its applications (CO3059) assignments.
+Computer Graphic (CO3059) assignments.
 
 ## General information
 
