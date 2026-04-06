@@ -21,7 +21,7 @@ Computer Graphic (CO3059) assignments.
 
 ## Assignment 1
 
-Main page: [Assignment 1](docs/index.md)
+Main page: [Assignment 1](page_render/index.html)
 
 ## Assignment 2
 
