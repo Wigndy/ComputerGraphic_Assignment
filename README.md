@@ -1,6 +1,6 @@
 # Computer Graphic (CO3059) - Assignment HK252
 
-> Landing page: [Github Page](https://phamtranminhtri.github.io/deep_learning_assignment/)
+> Landing page: [Github Page](https://wigndy.github.io/ComputerGraphic_Assignment/)
 
 Ho Chi Minh City University of Technology (HCMUT) – Vietnam National University-Ho Chi Minh City (VNU-HCMC).
 
@@ -21,7 +21,7 @@ Computer Graphic (CO3059) assignments.
 
 ## Assignment 1
 
-Complete
+Main page: [Assignment 1](docs/index.md)
 
 ## Assignment 2
 
