@@ -1,4 +1,4 @@
-# Deep learning and its applications (CO3133) - Assignment HK252
+# Computer Graphic (CO3059) - Assignment HK252
 
 > Landing page: [Github Page](https://phamtranminhtri.github.io/deep_learning_assignment/)
 
