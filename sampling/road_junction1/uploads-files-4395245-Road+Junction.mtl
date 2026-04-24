@@ -1,0 +1,275 @@
+# File produced by Open Asset Import Library (http://www.assimp.sf.net)
+# (assimp v6.0.0)
+
+newmtl Material.005
+Kd 0.800000012 0.800000012 0.800000012
+Ka 0 0 0
+Ks 0.800000012 0.800000012 0.800000012
+Ke 0 0 0
+Tf 0 0 0
+d 1
+Ns 36
+illum 2
+
+newmtl Material.004
+Kd 0.800000012 0.800000012 0.800000012
+Ka 0 0 0
+Ks 0.800000012 0.800000012 0.800000012
+Ke 0 0 0
+Tf 0 0 0
+d 1
+Ns 25
+illum 2
+map_Kd textures/PavingStones081_2K_Color.jpg
+
+newmtl Material.006
+Kd 0.800000012 0.800000012 0.800000012
+Ka 0 0 0
+Ks 0.800000012 0.800000012 0.800000012
+Ke 0 0 0
+Tf 0 0 0
+d 1
+Ns 25
+illum 2
+map_Kd textures/TactilePaving001_2K_Color.jpg
+
+newmtl Material
+Kd 1 1 1
+Ka 0 0 0
+Ks 1 1 1
+Ke 0 0 0
+Tf 0 0 0
+d 1
+Ns 100
+illum 2
+
+newmtl Material.002
+Kd 0 0 0
+Ka 0 0 0
+Ks 0 0 0
+Ke 0 0 0
+Tf 0 0 0
+d 1
+Ns 100
+illum 2
+
+newmtl Material.003
+Kd 0.800000012 0.800000012 0.800000012
+Ka 0 0 0
+Ks 0.800000012 0.800000012 0.800000012
+Ke 100 100 100
+Tf 0 0 0
+d 1
+Ns 100
+illum 2
+
+newmtl Material.007
+Kd 0.273831546 0.273831546 0.273831546
+Ka 0 0 0
+Ks 0.273831546 0.273831546 0.273831546
+Ke 0 0 0
+Tf 0 0 0
+d 1
+Ns 100
+illum 2
+
+newmtl Material.008
+Kd 0.044454813 0.044454813 0.044454813
+Ka 0 0 0
+Ks 0.044454813 0.044454813 0.044454813
+Ke 0 0 0
+Tf 0 0 0
+d 1
+Ns 100
+illum 2
+
+newmtl Material.012
+Kd 0.337832689 0.335062087 0.189458087
+Ka 0 0 0
+Ks 0.337832689 0.335062087 0.189458087
+Ke 0 0 0
+Tf 0 0 0
+d 1
+Ns 25
+illum 2
+
+newmtl Material.009
+Kd 0.800000012 0.800000012 0.800000012
+Ka 0 0 0
+Ks 0.800000012 0.800000012 0.800000012
+Ke 0 0 0
+Tf 0 0 0
+d 1
+Ns 25
+illum 2
+map_Kd textures/RoadLines012_1K_Color.jpg
+map_Ns textures/RoadLines012_1K_Roughness.jpg
+map_d textures/RoadLines012_1K_Opacity.jpg
+bump textures/RoadLines012_1K_NormalDX.jpg
+map_bump textures/RoadLines012_1K_NormalDX.jpg
+
+newmtl Material.010
+Kd 0.800000012 0.800000012 0.800000012
+Ka 0 0 0
+Ks 0.800000012 0.800000012 0.800000012
+Ke 0 0 0
+Tf 0 0 0
+d 1
+Ns 25
+illum 2
+map_Kd textures/RoadLines014_1K_Color.jpg
+map_Ns textures/RoadLines014_1K_Roughness.jpg
+map_d textures/RoadLines014_1K_Opacity.jpg
+bump textures/RoadLines014_1K_NormalDX.jpg
+map_bump textures/RoadLines014_1K_NormalDX.jpg
+
+newmtl Material.001
+Kd 0.800000012 0.800000012 0.800000012
+Ka 0 0 0
+Ks 0.800000012 0.800000012 0.800000012
+Ke 0 0 0
+Tf 0 0 0
+d 1
+Ns 25
+illum 2
+map_Kd textures/Road007_2K_Color.jpg
+
+newmtl Material.011
+Kd 0.800000012 0.800000012 0.800000012
+Ka 0 0 0
+Ks 0.800000012 0.800000012 0.800000012
+Ke 0 0 0
+Tf 0 0 0
+d 1
+Ns 25
+illum 2
+map_Kd textures/RoadLines001_15K_Color.jpg
+
+newmtl Material.020
+Kd 0.800000012 0.800000012 0.800000012
+Ka 0 0 0
+Ks 0.800000012 0.800000012 0.800000012
+Ke 0 0 0
+Tf 0 0 0
+d 1
+Ns 25
+illum 2
+map_Kd textures/TexturesCom_Atlas_RoadMarkings2_Yellow_1K_albedo.tif
+map_d textures/TexturesCom_Atlas_RoadMarkings2_1K_alpha.tif
+bump textures/TexturesCom_Atlas_RoadMarkings2_1K_normal.tif
+map_bump textures/TexturesCom_Atlas_RoadMarkings2_1K_normal.tif
+
+newmtl Material.018
+Kd 0.800000012 0.800000012 0.800000012
+Ka 0 0 0
+Ks 0.800000012 0.800000012 0.800000012
+Ke 0 0 0
+Tf 0 0 0
+d 1
+Ns 25
+illum 2
+map_Kd textures/TexturesCom_Roads0059_1_seamless_S.jpg
+
+newmtl Material.019
+Kd 0.800000012 0.800000012 0.800000012
+Ka 0 0 0
+Ks 0.800000012 0.800000012 0.800000012
+Ke 0 0 0
+Tf 0 0 0
+d 1
+Ns 25
+illum 2
+map_Kd textures/TexturesCom_Atlas_RoadMarkings2_Yellow_1K_albedo.tif
+map_d textures/TexturesCom_Atlas_RoadMarkings2_1K_alpha.tif
+bump textures/TexturesCom_Atlas_RoadMarkings2_1K_normal.tif
+map_bump textures/TexturesCom_Atlas_RoadMarkings2_1K_normal.tif
+
+newmtl Material.015
+Kd 0 0 0
+Ka 0 0 0
+Ks 0 0 0
+Ke 0 0 0
+Tf 0 0 0
+d 1
+Ns 100
+illum 2
+
+newmtl green
+Kd 0.0294126831 0.800000072 0.13289614
+Ka 0 0 0
+Ks 0.0294126831 0.800000072 0.13289614
+Ke 0 0 0
+Tf 0 0 0
+d 1
+Ns 100
+illum 2
+
+newmtl Material.014
+Kd 0 0 0
+Ka 0 0 0
+Ks 0 0 0
+Ke 0 0 0
+Tf 0 0 0
+d 1
+Ns 100
+illum 2
+
+newmtl Material.013
+Kd 1 1 1
+Ka 0 0 0
+Ks 1 1 1
+Ke 0 0 0
+Tf 0 0 0
+d 1
+illum 1
+
+newmtl Red
+Kd 0.800000072 0 0.00392480986
+Ka 0 0 0
+Ks 0.800000072 0 0.00392480986
+Ke 35 0.103420675 0
+Tf 0 0 0
+d 1
+Ns 100
+illum 2
+
+newmtl yellow
+Kd 0.703748822 0.646536708 0
+Ka 0 0 0
+Ks 0.703748822 0.646536708 0
+Ke 0 0 0
+Tf 0 0 0
+d 1
+Ns 100
+illum 2
+
+newmtl Material.016
+Kd 1 1 1
+Ka 0 0 0
+Ks 1 1 1
+Ke 0 0 0
+Tf 0 0 0
+d 1
+Ns 100
+illum 2
+
+newmtl Material.017
+Kd 0.969921708 0.969921708 0.969921708
+Ka 0 0 0
+Ks 0.969921708 0.969921708 0.969921708
+Ke 0 0 0
+Tf 0 0 0
+d 1
+Ns 100
+illum 2
+
+newmtl Material.021
+Kd 0.0908379853 0.0908379853 0.0908379853
+Ka 0 0 0
+Ks 0.0908379853 0.0908379853 0.0908379853
+Ke 0 0 0
+Tf 0 0 0
+d 1
+Ns 32.8936005
+illum 2
+
